@@ -1,0 +1,55 @@
+services:
+  # Base de datos PostgreSQL para el microservicio .NET
+  travelink-inventory-db:
+    image: postgres:15
+    container_name: travelink-inventory-db
+    environment:
+      POSTGRES_DB: TravelinkInventory
+      POSTGRES_USER: travelink_user
+      POSTGRES_PASSWORD: travelink_pass123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"  # Puerto diferente para evitar conflicto con Laravel
+    volumes:
+      - postgres_inventory_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - travelink-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelink_user -d TravelinkInventory"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Microservicio .NET
+  travelink-inventory-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: travelink-inventory-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=travelink-inventory-db;Port=5432;Database=TravelinkInventory;Username=travelink_user;Password=travelink_pass123
+    ports:
+      - "8083:8080"  # Puerto diferente para evitar conflicto
+    depends_on:
+      travelink-inventory-db:
+        condition: service_healthy
+    networks:
+      - travelink-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 10s bash -c 'cat < /dev/null > /dev/tcp/localhost/8080' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_inventory_data:
+
+networks:
+  travelink-network:
+    driver: bridge

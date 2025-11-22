@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-// Agregamos la conexión a PostgreSQL
+// Agregamos la conexiï¿½n a PostgreSQL
 builder.Services.AddDbContext<Travelink.Inventory.Data.InventoryContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -13,6 +13,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Ejecutar migraciones automÃ¡ticamente al iniciar
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<Travelink.Inventory.Data.InventoryContext>();
+    try
+    {
+        context.Database.Migrate();
+        Console.WriteLine("Migraciones ejecutadas exitosamente");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error ejecutando migraciones: {ex.Message}");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -26,5 +41,8 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check endpoint para Docker
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
 app.Run();
