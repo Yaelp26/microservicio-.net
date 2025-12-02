@@ -9,8 +9,8 @@ namespace Travelink.Inventory.Models
         public DateTime FechaFin { get; set; }
         public string EstadoReserva { get; set; } = "activa";  // activa, cancelada, terminada
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
-        public string? ClienteId { get; set; }
-        public string? ClienteNombre { get; set; }
-        public string? ClienteEmail { get; set; }
+        public string ClienteId { get; set; } = string.Empty;
+        public string ClienteNombre { get; set; } = string.Empty;
+        public string ClienteEmail { get; set; } = string.Empty;
     }
 }

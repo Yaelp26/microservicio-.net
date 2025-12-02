@@ -171,9 +171,13 @@ namespace Travelink.Inventory.Controllers
             }
 
             // Verificar si tiene reservas activas
-            var tieneReservasActivas = await _context.Reservas
-                .AnyAsync(r => r.HabitacionesIds.Contains(id) &&
-                              r.EstadoReserva == "activa");
+            // Cargar reservas activas y verificar en memoria debido a limitaciones de JSONB
+            var reservasActivas = await _context.Reservas
+                .Where(r => r.EstadoReserva == "activa")
+                .ToListAsync();
+
+            var tieneReservasActivas = reservasActivas
+                .Any(r => r.HabitacionesIds.Contains(id));
 
             if (tieneReservasActivas)
             {

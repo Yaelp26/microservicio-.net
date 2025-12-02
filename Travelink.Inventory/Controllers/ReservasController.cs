@@ -16,60 +16,8 @@ namespace Travelink.Inventory.Controllers
             _context = context;
         }
 
-        // GET: api/Reservas
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservas()
-        {
-            return await _context.Reservas
-                .OrderByDescending(r => r.FechaCreacion)
-                .ToListAsync();
-        }
-
-        // GET: api/Reservas/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Reserva>> GetReserva(int id)
-        {
-            var reserva = await _context.Reservas.FindAsync(id);
-
-            if (reserva == null)
-            {
-                return NotFound(new { mensaje = "Reserva no encontrada" });
-            }
-
-            return reserva;
-        }
-
-        // GET: api/Reservas/cliente/12345
-        [HttpGet("cliente/{clienteId}")]
-        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservasPorCliente(string clienteId)
-        {
-            var reservas = await _context.Reservas
-                .Where(r => r.ClienteId == clienteId)
-                .OrderByDescending(r => r.FechaCreacion)
-                .ToListAsync();
-
-            return reservas;
-        }
-
-        // GET: api/Reservas/hotel/1
-        [HttpGet("hotel/{hotelId}")]
-        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservasPorHotel(int hotelId)
-        {
-            var hotelExiste = await _context.Hoteles.AnyAsync(h => h.Id == hotelId);
-            if (!hotelExiste)
-            {
-                return NotFound(new { mensaje = "Hotel no encontrado" });
-            }
-
-            var reservas = await _context.Reservas
-                .Where(r => r.HotelId == hotelId)
-                .OrderByDescending(r => r.FechaCreacion)
-                .ToListAsync();
-
-            return reservas;
-        }
-
         // POST: api/Reservas
+        // Este endpoint será llamado por Laravel cuando se crea una reserva
         [HttpPost]
         public async Task<ActionResult<Reserva>> PostReserva(Reserva reserva)
         {
@@ -193,65 +141,43 @@ namespace Travelink.Inventory.Controllers
             _context.Reservas.Add(reserva);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetReserva), new { id = reserva.Id }, reserva);
+            return CreatedAtAction(nameof(PostReserva), new { id = reserva.Id }, reserva);
         }
 
-        // PUT: api/Reservas/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReserva(int id, Reserva reserva)
+        // PATCH: api/Reservas/5/estado
+        // Laravel llama este endpoint para actualizar el estado de una reserva
+        [HttpPatch("{id}/estado")]
+        public async Task<IActionResult> ActualizarEstadoReserva(int id, [FromBody] ActualizarEstadoRequest request)
         {
-            if (id != reserva.Id)
-            {
-                return BadRequest(new { mensaje = "El ID no coincide" });
-            }
+            var reserva = await _context.Reservas.FindAsync(id);
 
-            // Verificar que existe
-            var reservaExistente = await _context.Reservas.FindAsync(id);
-            if (reservaExistente == null)
+            if (reserva == null)
             {
                 return NotFound(new { mensaje = "Reserva no encontrada" });
             }
 
-            // Validar fechas
-            if (reserva.FechaInicio >= reserva.FechaFin)
+            // Validar y normalizar estado
+            if (string.IsNullOrEmpty(request.Estado))
             {
-                return BadRequest(new { mensaje = "La fecha de inicio debe ser anterior a la fecha de fin" });
+                return BadRequest(new { mensaje = "Estado es requerido" });
             }
 
-            // Validar y normalizar EstadoReserva
-            if (!string.IsNullOrEmpty(reserva.EstadoReserva))
+            var estadoNormalizado = request.Estado.ToLower();
+            var estadosValidos = new[] { "activa", "cancelada", "terminada" };
+
+            if (!estadosValidos.Contains(estadoNormalizado))
             {
-                reserva.EstadoReserva = reserva.EstadoReserva.ToLower();
-                var estadosValidos = new[] { "activa", "cancelada", "terminada" };
-                if (!estadosValidos.Contains(reserva.EstadoReserva))
-                {
-                    return BadRequest(new { mensaje = "EstadoReserva debe ser: activa, cancelada o terminada" });
-                }
+                return BadRequest(new { mensaje = "Estado debe ser: activa, cancelada o terminada" });
             }
 
-            // Preservar la fecha de creación original
-            reserva.FechaCreacion = reservaExistente.FechaCreacion;
+            reserva.EstadoReserva = estadoNormalizado;
+            await _context.SaveChangesAsync();
 
-            _context.Entry(reservaExistente).State = EntityState.Detached;
-            _context.Entry(reserva).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _context.Reservas.AnyAsync(e => e.Id == id))
-                {
-                    return NotFound(new { mensaje = "Reserva no encontrada" });
-                }
-                throw;
-            }
-
-            return NoContent();
+            return Ok(new { mensaje = $"Reserva actualizada a estado: {estadoNormalizado}", reserva });
         }
 
         // PATCH: api/Reservas/5/cancelar
+        // Atajo para cancelar (alternativa al endpoint de estado)
         [HttpPatch("{id}/cancelar")]
         public async Task<IActionResult> CancelarReserva(int id)
         {
@@ -262,16 +188,6 @@ namespace Travelink.Inventory.Controllers
                 return NotFound(new { mensaje = "Reserva no encontrada" });
             }
 
-            if (reserva.EstadoReserva == "cancelada")
-            {
-                return BadRequest(new { mensaje = "La reserva ya está cancelada" });
-            }
-
-            if (reserva.EstadoReserva == "terminada")
-            {
-                return BadRequest(new { mensaje = "No se puede cancelar una reserva terminada" });
-            }
-
             reserva.EstadoReserva = "cancelada";
             await _context.SaveChangesAsync();
 
@@ -279,6 +195,7 @@ namespace Travelink.Inventory.Controllers
         }
 
         // DELETE: api/Reservas/5
+        // Solo para administradores - limpieza de datos
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReserva(int id)
         {
@@ -294,5 +211,11 @@ namespace Travelink.Inventory.Controllers
 
             return Ok(new { mensaje = "Reserva eliminada exitosamente" });
         }
+    }
+
+    // Modelo para el request de actualización de estado
+    public class ActualizarEstadoRequest
+    {
+        public string Estado { get; set; } = string.Empty;
     }
 }
