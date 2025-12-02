@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Travelink.Inventory.Data;
 using Travelink.Inventory.Models;
@@ -18,6 +19,7 @@ namespace Travelink.Inventory.Controllers
 
         // GET: api/Disponibilidad?hotelId=1&tipoHabitacion=doble&fechaInicio=2024-12-01&fechaFin=2024-12-05
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> ConsultarDisponibilidad(
             int hotelId,
             string tipoHabitacion,

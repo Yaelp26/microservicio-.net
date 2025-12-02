@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Travelink.Inventory.Data;
 using Travelink.Inventory.Models;
@@ -23,6 +24,7 @@ public class HotelesController : ControllerBase
 
     // GET: api/Hoteles/5
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<Hotel>> GetHotel(int id)
     {
         var hotel = await _context.Hoteles.FindAsync(id);
@@ -58,6 +60,7 @@ public class HotelesController : ControllerBase
 
     // POST: api/Hoteles
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<Hotel>> PostHotel(Hotel hotel)
     {
         // Validar y normalizar estado
@@ -79,6 +82,7 @@ public class HotelesController : ControllerBase
 
     // PUT: api/Hoteles/5
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<IActionResult> PutHotel(int id, Hotel hotel)
     {
         if (id != hotel.Id)
@@ -117,6 +121,7 @@ public class HotelesController : ControllerBase
 
     // DELETE: api/Hoteles/5
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteHotel(int id)
     {
         var hotel = await _context.Hoteles.FindAsync(id);

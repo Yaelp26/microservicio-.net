@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Travelink.Inventory.Data;
 using Travelink.Inventory.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace Travelink.Inventory.Controllers
 {
@@ -19,7 +21,8 @@ namespace Travelink.Inventory.Controllers
         // POST: api/Reservas
         // Este endpoint será llamado por Laravel cuando se crea una reserva
         [HttpPost]
-        public async Task<ActionResult<Reserva>> PostReserva(Reserva reserva)
+        [Authorize]
+        public async Task<ActionResult<Reserva>> CrearReserva(Reserva reserva)
         {
             // Validar que el hotel existe
             var hotel = await _context.Hoteles.FindAsync(reserva.HotelId);
@@ -141,12 +144,13 @@ namespace Travelink.Inventory.Controllers
             _context.Reservas.Add(reserva);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(PostReserva), new { id = reserva.Id }, reserva);
+            return CreatedAtAction(nameof(CrearReserva), new { id = reserva.Id }, reserva);
         }
 
         // PATCH: api/Reservas/5/estado
         // Laravel llama este endpoint para actualizar el estado de una reserva
         [HttpPatch("{id}/estado")]
+        [Authorize]
         public async Task<IActionResult> ActualizarEstadoReserva(int id, [FromBody] ActualizarEstadoRequest request)
         {
             var reserva = await _context.Reservas.FindAsync(id);
@@ -179,6 +183,7 @@ namespace Travelink.Inventory.Controllers
         // PATCH: api/Reservas/5/cancelar
         // Atajo para cancelar (alternativa al endpoint de estado)
         [HttpPatch("{id}/cancelar")]
+        [Authorize]
         public async Task<IActionResult> CancelarReserva(int id)
         {
             var reserva = await _context.Reservas.FindAsync(id);
@@ -197,6 +202,7 @@ namespace Travelink.Inventory.Controllers
         // DELETE: api/Reservas/5
         // Solo para administradores - limpieza de datos
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteReserva(int id)
         {
             var reserva = await _context.Reservas.FindAsync(id);

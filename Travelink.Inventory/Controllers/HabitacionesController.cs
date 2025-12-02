@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Travelink.Inventory.Data;
 using Travelink.Inventory.Models;
@@ -18,6 +19,7 @@ namespace Travelink.Inventory.Controllers
 
         // GET: api/Habitaciones
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Habitacion>>> GetHabitaciones()
         {
             return await _context.Habitaciones.ToListAsync();
@@ -25,6 +27,7 @@ namespace Travelink.Inventory.Controllers
 
         // GET: api/Habitaciones/5
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<Habitacion>> GetHabitacion(int id)
         {
             var habitacion = await _context.Habitaciones.FindAsync(id);
@@ -37,8 +40,9 @@ namespace Travelink.Inventory.Controllers
             return habitacion;
         }
 
-        // GET: api/Habitaciones/hotel/1
+        // GET: api/Habitaciones/hotel/5
         [HttpGet("hotel/{hotelId}")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Habitacion>>> GetHabitacionesPorHotel(int hotelId)
         {
             var hotelExiste = await _context.Hoteles.AnyAsync(h => h.Id == hotelId);
@@ -57,6 +61,7 @@ namespace Travelink.Inventory.Controllers
 
         // POST: api/Habitaciones
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<Habitacion>> PostHabitacion(Habitacion habitacion)
         {
             // Validar que el hotel existe
@@ -105,6 +110,7 @@ namespace Travelink.Inventory.Controllers
 
         // PUT: api/Habitaciones/5
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> PutHabitacion(int id, Habitacion habitacion)
         {
             if (id != habitacion.Id)
@@ -161,6 +167,7 @@ namespace Travelink.Inventory.Controllers
 
         // DELETE: api/Habitaciones/5
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteHabitacion(int id)
         {
             var habitacion = await _context.Habitaciones.FindAsync(id);
