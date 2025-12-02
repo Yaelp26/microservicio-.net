@@ -35,6 +35,27 @@ public class HotelesController : ControllerBase
         return hotel;
     }
 
+    // GET: api/Hoteles/buscar/{nombre}
+    [HttpGet("buscar/{nombre}")]
+    public async Task<ActionResult<IEnumerable<Hotel>>> BuscarHotelPorNombre(string nombre)
+    {
+        if (string.IsNullOrWhiteSpace(nombre))
+        {
+            return BadRequest(new { mensaje = "El nombre de búsqueda no puede estar vacío" });
+        }
+
+        var hoteles = await _context.Hoteles
+            .Where(h => h.Nombre.Contains(nombre))
+            .ToListAsync();
+
+        if (!hoteles.Any())
+        {
+            return NotFound(new { mensaje = "No se encontraron hoteles con ese nombre" });
+        }
+
+        return hoteles;
+    }
+
     // POST: api/Hoteles
     [HttpPost]
     public async Task<ActionResult<Hotel>> PostHotel(Hotel hotel)
