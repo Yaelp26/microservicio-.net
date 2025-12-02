@@ -1,13 +1,33 @@
 using Microsoft.EntityFrameworkCore;
+using Minio;
+using Travelink.Inventory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-// Agregamos la conexi�n a PostgreSQL
+
+// Agregamos la conexión a PostgreSQL
 builder.Services.AddDbContext<Travelink.Inventory.Data.InventoryContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add services to the container.
+// Configurar MinIO
+var minioEndpoint = builder.Configuration["MinIO:Endpoint"];
+var minioAccessKey = builder.Configuration["MinIO:AccessKey"];
+var minioSecretKey = builder.Configuration["MinIO:SecretKey"];
+var minioUseSSL = bool.Parse(builder.Configuration["MinIO:UseSSL"] ?? "false");
 
+builder.Services.AddSingleton<IMinioClient>(sp =>
+{
+    return new MinioClient()
+        .WithEndpoint(minioEndpoint)
+        .WithCredentials(minioAccessKey, minioSecretKey)
+        .WithSSL(minioUseSSL)
+        .Build();
+});
+
+builder.Services.AddScoped<IMinioService, MinioService>();
+
+// Add services to the container.
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

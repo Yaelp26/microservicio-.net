@@ -58,9 +58,17 @@ namespace Travelink.Inventory.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Ciudad")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Direccion")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Imagenes")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Nombre")
                         .IsRequired()

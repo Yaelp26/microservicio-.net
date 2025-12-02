@@ -22,6 +22,28 @@ services:
       timeout: 10s
       retries: 3
 
+  # MinIO para almacenamiento de imágenes
+  travelink-minio:
+    image: minio/minio
+    container_name: travelink-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - travelink-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Microservicio .NET
   travelink-inventory-api:
     build:
@@ -32,10 +54,17 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=travelink-inventory-db;Port=5432;Database=TravelinkInventory;Username=travelink_user;Password=travelink_pass123
+      - MinIO__Endpoint=travelink-minio
+      - MinIO__Port=9000
+      - MinIO__AccessKey=minioadmin
+      - MinIO__SecretKey=minioadmin
+      - MinIO__UseSSL=false
     ports:
       - "8083:8080" # Puerto diferente para evitar conflicto
     depends_on:
       travelink-inventory-db:
+        condition: service_healthy
+      travelink-minio:
         condition: service_healthy
     networks:
       - travelink-network
@@ -49,6 +78,7 @@ services:
 
 volumes:
   postgres_inventory_data:
+  minio_data:
 
 
 networks:
