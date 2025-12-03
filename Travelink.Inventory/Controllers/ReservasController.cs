@@ -12,18 +12,31 @@ namespace Travelink.Inventory.Controllers
     public class ReservasController : ControllerBase
     {
         private readonly InventoryContext _context;
+        private readonly IConfiguration _configuration;
 
-        public ReservasController(InventoryContext context)
+        public ReservasController(InventoryContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // POST: api/Reservas
-        // Este endpoint será llamado por Laravel cuando se crea una reserva
+        // Este endpoint será llamado por Laravel cuando se crea una reserva (Webhook)
         [HttpPost]
-        [Authorize]
         public async Task<ActionResult<Reserva>> CrearReserva(Reserva reserva)
         {
+            // Validar webhook secret
+            if (!Request.Headers.TryGetValue("X-Webhook-Secret", out var receivedSecret))
+            {
+                return Unauthorized(new { mensaje = "Header X-Webhook-Secret requerido" });
+            }
+
+            var configuredSecret = _configuration["Webhook:Secret"];
+            if (receivedSecret != configuredSecret)
+            {
+                return Unauthorized(new { mensaje = "Secret inválido" });
+            }
+
             // Validar que el hotel existe
             var hotel = await _context.Hoteles.FindAsync(reserva.HotelId);
             if (hotel == null)
